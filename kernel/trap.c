@@ -60,6 +60,7 @@ usertrap(void)
     // but we want to return to the next instruction.
     p->trapframe->epc += 4;
 
+
     // an interrupt will change sstatus &c registers,
     // so don't enable until done with those registers.
     intr_on();
@@ -76,9 +77,29 @@ usertrap(void)
   if(p->killed)
     exit(-1);
 
+	// lab4
+	if (which_dev == 2)
+	{
+	  if (p->alarm_interval > 0)
+	  {
+		  ++p->alarm_remain;
+		  if (++p->alarm_remain == p->alarm_interval)
+		  {
+			  if (p->in_alarm == 0)
+			  {
+				  memmove(&(p->alarm_tf), p->trapframe, sizeof(struct trapframe));
+				  p->trapframe->epc = p->alarm_handler;
+				  p->in_alarm = 1;
+			  }
+			  else
+				  --p->alarm_remain;
+		  }
+	  }
+	}
+
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
-    yield();
+	  yield();
 
   usertrapret();
 }

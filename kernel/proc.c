@@ -127,6 +127,11 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // lab4
+  p->alarm_interval = 0;
+  p->alarm_remain = 0;
+  p->alarm_handler = 0;
+
   return p;
 }
 
@@ -697,3 +702,4 @@ procdump(void)
     printf("\n");
   }
 }
+
