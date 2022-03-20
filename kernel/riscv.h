@@ -332,6 +332,12 @@ sfence_vma()
 #define PTE_X (1L << 3)
 #define PTE_U (1L << 4) // 1 -> user can access
 
+// lab6
+#define PTE_COW (1L << 8)
+#define SET_COW(flags) (((flags) & (~PTE_W)) | PTE_COW)
+#define RESET_COW(flags) (((flags) & (~PTE_COW)) | PTE_W)
+#define CHECK_COW(flags) ((flags) & PTE_COW)
+
 // shift a physical address to the right place for a PTE.
 #define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)
 

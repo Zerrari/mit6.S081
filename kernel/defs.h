@@ -64,6 +64,11 @@ void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
 
+// lab6
+int 			get_refer(uint64);
+void			inc_refer(uint64);
+void			dec_refer(uint64);
+
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
@@ -171,6 +176,10 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
+
+// lab6
+pte_t* 			walk(pagetable_t, uint64, int);
+int				cow(pagetable_t, pte_t*, uint64);
 
 // plic.c
 void            plicinit(void);
