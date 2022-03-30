@@ -33,6 +33,10 @@ struct {
   struct buf head;
 } bcache;
 
+// lab8
+#define BUCKET_SIZE 1000
+struct buf hash[BUCKET_SIZE];
+
 void
 binit(void)
 {
