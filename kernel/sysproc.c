@@ -95,3 +95,26 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// lab9
+uint64
+sys_symlink(void)
+{
+	char target[100];
+	char path[100];
+
+	if (argstr(0, target, 100) <= 0)
+		return -1;
+	if (argstr(1, path, 100) <= 0)
+		return -1;
+
+	int ret = 0;
+
+	begin_op();
+
+	ret = createLink(target, path);
+
+	end_op();
+		
+	return ret;
+}

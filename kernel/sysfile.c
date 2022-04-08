@@ -238,6 +238,44 @@ bad:
   return -1;
 }
 
+// lab9
+int
+createLink(char *target, char *path)
+{
+  struct inode *ip, *dp;
+  char name[DIRSIZ];
+
+  if((dp = nameiparent(path, name)) == 0)
+    return -1;
+
+  ilock(dp);
+
+  // file has be created
+  if((ip = dirlookup(dp, name, 0)) != 0){
+    iunlockput(dp);
+    return -1;
+  }
+
+  if((ip = ialloc(dp->dev, T_SYMLINK)) == 0)
+    panic("create: ialloc");
+
+  ilock(ip);
+  ip->major = 0;
+  ip->minor = 0;
+  ip->type = T_SYMLINK;
+  ip->nlink = 1;
+  memmove(ip->target, target, strlen(target)+1);
+  iupdate(ip);
+
+  if(dirlink(dp, name, ip->inum) < 0)
+    panic("create: dirlink");
+
+  iunlockput(ip);
+  iunlockput(dp);
+
+  return 0;
+}
+
 static struct inode*
 create(char *path, short type, short major, short minor)
 {
@@ -314,6 +352,33 @@ sys_open(void)
       end_op();
       return -1;
     }
+  }
+
+  if (ip->type == T_SYMLINK && (!(omode & O_NOFOLLOW)))
+  {
+	struct inode *prev_ip = ip;
+	struct inode *new_ip;
+	int ret = 0;
+	do{
+		if (ret == 10)
+		{
+			iunlockput(prev_ip);
+			end_op();
+			return -1;
+		}
+		if ((new_ip = namei(prev_ip->target)) == 0){
+			iunlockput(prev_ip);
+			end_op();
+			return -1;
+		}
+		iunlockput(prev_ip);
+		ilock(new_ip);
+		prev_ip = new_ip;
+		++ret;
+	}while (prev_ip->type == T_SYMLINK);
+	//iunlockput(ip);
+	ip = prev_ip;
+	//ilock(ip);
   }
 
   if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){

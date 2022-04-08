@@ -2,6 +2,9 @@
 #define T_FILE    2   // File
 #define T_DEVICE  3   // Device
 
+// lab9
+#define T_SYMLINK 4   // symbolic links
+
 struct stat {
   int dev;     // File system's disk device
   uint ino;    // Inode number
