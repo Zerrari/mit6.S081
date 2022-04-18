@@ -74,8 +74,6 @@ usertrap(void)
   } else if(r_scause() == 13 || r_scause() == 15){
 	uint64 va = r_stval();
 	struct proc* p = myproc();
-	printf("%p\n", va);
-	printf("%p\n", PHYSTOP);
 
 	if (va >= KERNBASE && va < KERNBASE + 2000000)
 	{
@@ -96,10 +94,7 @@ usertrap(void)
 	uint flags = 0;
 	pagetable_t pagetable = p->pagetable;
 	va = PGROUNDDOWN(va);
-	char* mem;
-	if ((mem = kalloc()) == 0)
-		goto err; 
-	memset(mem, 0, PGSIZE);
+
 	struct vma* t = 0;
 	for (int i = 0; i < 16; ++i)
 	{
@@ -108,9 +103,15 @@ usertrap(void)
 		t = &vrec[i];
 		if (va >= t->addr && va < t->addr + PGSIZE * (t->pages))
 			break;
+		t = 0;
 	}
 	if (t == 0)
 		goto err;
+
+	char* mem;
+	if ((mem = kalloc()) == 0)
+		goto err; 
+	memset(mem, 0, PGSIZE);
 
 	struct file* fp = t->fp;
 	if (t->flags & MAP_PRIVATE)

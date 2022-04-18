@@ -51,8 +51,7 @@ sys_sbrk(void)
   if(argint(0, &n) < 0)
     return -1;
   addr = myproc()->sz;
-  if (n == 10*100*1024*1024)
-	  printf("size: %p\n", addr+n);
+
   if (n+addr >= MAXVA)
   {
     return -1;
