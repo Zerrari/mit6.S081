@@ -2253,6 +2253,7 @@ sbrkfail(char *s)
     // and thus not complete.
     a = sbrk(0);
     sbrk(10*BIG);
+	printf("sbrk: %p\n", 10*BIG);
     int n = 0;
     for (i = 0; i < 10*BIG; i += PGSIZE) {
       n += *(a+i);
@@ -2772,8 +2773,8 @@ main(int argc, char *argv[])
     //{bsstest, "bsstest"},
     //{sbrkbasic, "sbrkbasic"},
     //{sbrkmuch, "sbrkmuch"},
-    {kernmem, "kernmem"},
-    //{sbrkfail, "sbrkfail"},
+    //{kernmem, "kernmem"},
+    {sbrkfail, "sbrkfail"},
     //{sbrkarg, "sbrkarg"},
     //{validatetest, "validatetest"},
     //{stacktest, "stacktest"},
