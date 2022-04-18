@@ -75,7 +75,7 @@ usertrap(void)
 	uint64 va = r_stval();
 	struct proc* p = myproc();
 
-	if (va <= KERNBASE)
+	if (va >= KERNBASE && va < KERNBASE + 0x2000000)
 	{
 		p->killed = 1;
 		exit(-1);
