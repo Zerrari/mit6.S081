@@ -73,9 +73,19 @@ usertrap(void)
     // ok
   } else if(r_scause() == 13 || r_scause() == 15){
 	uint64 va = r_stval();
-	//printf("%p\n", va);
-	uint flags = 0;
 	struct proc* p = myproc();
+
+	char* sp = (char*)(p->trapframe->sp);
+	char* gp = sp - PGSIZE;
+	uint64 gp_start = PGROUNDDOWN((uint64)gp);
+	uint64 gp_end = PGROUNDUP((uint64)gp);
+	if (va >= MAXVA || (gp_start <= va && va < gp_end))
+	{
+		p->killed = 1;
+		exit(-1);
+	}
+	
+	uint flags = 0;
 	pagetable_t pagetable = p->pagetable;
 	va = PGROUNDDOWN(va);
 	char* mem;
