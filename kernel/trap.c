@@ -75,7 +75,7 @@ usertrap(void)
 	uint64 va = r_stval();
 	struct proc* p = myproc();
 	printf("%p\n", va);
-	printf("%p\n", MAXVA);
+	printf("%p\n", PHYSTOP);
 
 	if (va >= KERNBASE && va < KERNBASE + 2000000)
 	{
