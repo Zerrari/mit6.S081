@@ -75,6 +75,12 @@ usertrap(void)
 	uint64 va = r_stval();
 	struct proc* p = myproc();
 
+	if (va <= KERNBASE)
+	{
+		p->killed = 1;
+		exit(-1);
+	}
+
 	char* sp = (char*)(p->trapframe->sp);
 	char* gp = sp - PGSIZE;
 	uint64 gp_start = PGROUNDDOWN((uint64)gp);
