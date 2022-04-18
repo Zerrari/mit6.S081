@@ -180,3 +180,31 @@ filewrite(struct file *f, uint64 addr, int n)
   return ret;
 }
 
+// lab10
+int
+readfp(struct file *fp, int user_dst, uint64 dst, uint off, uint n)
+{
+
+	struct inode* ip = fp->ip;
+
+	ilock(ip);
+	uint tot;
+	tot = readi(ip, user_dst, dst, off, n);
+	iunlock(ip);
+
+	return tot;
+}
+
+int 
+checkread(struct file *fp)
+{
+	return fp->readable == 1;
+}
+
+int 
+checkwrite(struct file* fp)
+{
+	return fp->writable == 1;
+}
+
+

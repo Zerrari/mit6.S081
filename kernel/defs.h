@@ -34,6 +34,11 @@ int             fileread(struct file*, uint64, int n);
 int             filestat(struct file*, uint64 addr);
 int             filewrite(struct file*, uint64, int n);
 
+// lab10
+int 			readfp(struct file*, int, uint64, uint, uint);
+int  			checkread(struct file*);
+int  			checkwrite(struct file*);
+
 // fs.c
 void            fsinit(int);
 int             dirlink(struct inode*, char*, uint);
@@ -53,6 +58,7 @@ int             readi(struct inode*, int, uint64, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, int, uint64, uint, uint);
 void            itrunc(struct inode*);
+
 
 // ramdisk.c
 void            ramdiskinit(void);
@@ -171,6 +177,9 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
+
+// lab10
+pte_t *			walk(pagetable_t, uint64, int);
 
 // plic.c
 void            plicinit(void);

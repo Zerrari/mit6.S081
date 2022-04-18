@@ -6,6 +6,10 @@
 #include "proc.h"
 #include "defs.h"
 
+// lab10
+#include "fcntl.h"
+extern struct vma vrec[16];
+
 struct spinlock tickslock;
 uint ticks;
 
@@ -67,7 +71,66 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else {
+  } else if(r_scause() == 13 || r_scause() == 15){
+	uint64 va = r_stval();
+	//printf("%p\n", va);
+	uint flags = 0;
+	struct proc* p = myproc();
+	pagetable_t pagetable = p->pagetable;
+	va = PGROUNDDOWN(va);
+	char* mem;
+	if ((mem = kalloc()) == 0)
+		goto err; 
+	memset(mem, 0, PGSIZE);
+	struct vma* t = 0;
+	for (int i = 0; i < 16; ++i)
+	{
+		if (p->v[i] == 0)
+			continue;
+		t = &vrec[i];
+		if (va >= t->addr && va < t->addr + PGSIZE * (t->pages))
+			break;
+	}
+	if (t == 0)
+		goto err;
+
+	struct file* fp = t->fp;
+	if (t->flags & MAP_PRIVATE)
+	{
+		if ((t->prot & PROT_READ) && checkread(fp))
+			flags |= PTE_R;
+		if (checkread(fp) && (~checkwrite(fp)))
+		{
+			if (t->prot & PROT_WRITE)
+				flags |= PTE_W;
+			if (t->prot & PROT_EXEC)
+				flags |= PTE_X;
+		}
+	}
+	else if (t->flags & MAP_SHARED)
+	{
+		if ((t->prot & PROT_READ) && checkread(fp))
+			flags |= PTE_R;
+		if ((t->prot & PROT_WRITE) && checkwrite(fp))
+			flags |= PTE_W;
+		if (t->prot & PROT_EXEC)
+			flags |= PTE_X;
+	}
+	flags |= PTE_U;
+	flags |= PTE_V;
+	if (mappages(pagetable, va, PGSIZE, (uint64)mem, flags) == 0)
+	{
+		readfp(fp, 1, va, va-t->addr, PGSIZE);
+	}
+	else
+	{
+		kfree(mem);
+		err: 
+		printf("mmap fail\n");
+		p->killed = -1;
+	}
+
+  } else{
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;

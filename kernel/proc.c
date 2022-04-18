@@ -12,6 +12,14 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
+// lab10 
+#include "fcntl.h"
+struct vma vrec[16];
+
+void copyvma(struct proc* np, struct proc* p);
+
+void freevma(struct proc* p);
+
 int nextpid = 1;
 struct spinlock pid_lock;
 
@@ -134,6 +142,9 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // lab10
+  p->start_address = TRAPFRAME;
+
   return p;
 }
 
@@ -146,8 +157,11 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+
   if(p->pagetable)
+  {
     proc_freepagetable(p->pagetable, p->sz);
+  }
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -302,6 +316,9 @@ fork(void)
 
   np->state = RUNNABLE;
 
+  // lab10;
+  copyvma(np, p);
+
   release(&np->lock);
 
   return pid;
@@ -352,6 +369,9 @@ exit(int status)
       p->ofile[fd] = 0;
     }
   }
+
+  // lab10
+  freevma(p);
 
   begin_op();
   iput(p->cwd);
@@ -700,4 +720,66 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// lab10
+void
+copyvma(struct proc* np, struct proc* p)
+{
+	np->start_address = TRAPFRAME;
+	int i = 0, j = 0;
+	for (; i < 16; ++i)
+	{
+		while (vrec[j].pid != 0)
+			++j;
+			
+		if (p->v[i] == 1)
+		{
+			struct vma* nt = &vrec[j];
+			struct vma* t = &vrec[i];
+			nt->addr = t->addr;
+			nt->fp = t->fp;
+			nt->len = t->len;
+			nt->prot = t->prot;
+			nt->flags = t->flags;
+			nt->fd = t->fd;
+			nt->offset = t->offset;
+			nt->pid = np->pid;
+			nt->pages = t->pages;
+
+			np->v[j] = 1;
+			filedup(t->fp);
+		}
+	}
+	return;
+}
+
+void 
+freevma(struct proc* p)
+{
+	for (int i = 0; i < 16; ++i)
+	{
+		if (p->v[i] == 1)
+		{
+			uint64 addr = vrec[i].addr;
+			int pages = vrec[i].pages;
+
+			if (vrec[i].flags & MAP_SHARED)
+			{
+				filewrite(vrec[i].fp, addr, pages*PGSIZE);
+			}
+
+			for (int j = 0; j < pages; ++j)
+			{
+				if (walkaddr(p->pagetable, addr) != 0)
+					uvmunmap(p->pagetable, addr, 1, 1);
+				addr += PGSIZE;
+			}
+
+			fileclose(vrec[i].fp);
+			p->v[i]	= 0;
+			vrec[i].pid = 0;
+		}
+	}
+	return;
 }
