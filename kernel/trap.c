@@ -74,8 +74,10 @@ usertrap(void)
   } else if(r_scause() == 13 || r_scause() == 15){
 	uint64 va = r_stval();
 	struct proc* p = myproc();
+	printf("%p\n", va);
+	printf("%p\n", MAXVA);
 
-	if (va >= KERNBASE && va < KERNBASE + 0x2000000)
+	if (va >= KERNBASE && va < KERNBASE + 2000000)
 	{
 		p->killed = 1;
 		exit(-1);
