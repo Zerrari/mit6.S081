@@ -21,6 +21,11 @@ static volatile uint32 *regs;
 
 struct spinlock e1000_lock;
 
+
+// lab
+struct spinlock send_lock;
+struct spinlock recv_lock;
+
 // called by pci_init().
 // xregs is the memory address at which the
 // e1000's registers are mapped.
@@ -30,6 +35,10 @@ e1000_init(uint32 *xregs)
   int i;
 
   initlock(&e1000_lock, "e1000");
+
+  // lab
+  initlock(&send_lock, "send");
+  initlock(&recv_lock, "recv");
 
   regs = xregs;
 
@@ -102,7 +111,37 @@ e1000_transmit(struct mbuf *m)
   // the TX descriptor ring so that the e1000 sends it. Stash
   // a pointer so that it can be freed after sending.
   //
+
+  // check previous transmit has done
+
+  acquire(&send_lock);
+	
+  uint32 idx = regs[E1000_TDT];
+  if (!(tx_ring[idx].status & E1000_TXD_STAT_DD)) {
+	  release(&send_lock);
+	  return -1;
+  }
+
+  // free last buffer
+  uint32 last_idx = (idx == 0) ? (TX_RING_SIZE - 1) : (idx - 1);
+  struct mbuf* last_mbuf = tx_mbufs[last_idx];
+  if (last_mbuf) {
+	mbuffree(last_mbuf);
+  }
   
+  // set current descriptor
+  tx_ring[idx].addr = (uint64)m->head;
+  tx_ring[idx].length = m->len;
+  tx_mbufs[idx] = m;
+
+  // set flags
+  tx_ring[idx].cmd = E1000_TXD_CMD_EOP | E1000_TXD_CMD_RS;
+
+
+  // move to next descriptor
+  regs[E1000_TDT] = (regs[E1000_TDT] + 1) % TX_RING_SIZE;
+
+  release(&send_lock);
   return 0;
 }
 
@@ -115,6 +154,29 @@ e1000_recv(void)
   // Check for packets that have arrived from the e1000
   // Create and deliver an mbuf for each packet (using net_rx()).
   //
+
+  acquire(&recv_lock);
+
+  uint32 idx = (regs[E1000_RDT] + 1) % RX_RING_SIZE;
+
+  while (rx_ring[idx].status & E1000_RXD_STAT_DD) {
+
+	  rx_mbufs[idx]->len = rx_ring[idx].length;
+	  net_rx(rx_mbufs[idx]);
+
+	  struct mbuf* new_mbuf = mbufalloc(0);
+	  rx_ring[idx].addr = (uint64)new_mbuf->head;
+	  rx_ring[idx].status = 0;
+	 
+	  rx_mbufs[idx] = new_mbuf;
+
+	  regs[E1000_RDT] = idx;
+
+	  idx = (idx + 1) % RX_RING_SIZE;
+
+  }
+
+  release(&recv_lock);
 }
 
 void
@@ -126,4 +188,5 @@ e1000_intr(void)
   regs[E1000_ICR] = 0xffffffff;
 
   e1000_recv();
+
 }
